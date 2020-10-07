@@ -1,0 +1,201 @@
+---
+title: "Finish problems in the Homework 2"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{To finish some problems in the homework 2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(bis557homework2)
+```
+
+# 1. This is the solution of the Question 1
+
+Let $X=\left[\begin{array}{cc}
+1&x_1\\
+\vdots&\vdots\\
+1&x_n
+\end{array}\right]$, then $X^T$ will be $\left[\begin{array}{ccc}
+1&\cdots&1\\
+x_1&\cdots&x_n
+\end{array}\right]$
+
+Let $Y$ be the matrix of $\left[\begin{array}{c}
+y_1\\
+\vdots\\
+y_n
+\end{array}\right]$
+
+We know that $\beta$ can be written as $\beta=(X^TX)^{-1}X^TY$
+
+Using what we have before, we can express $\beta$ as
+
+$$\begin{array}{l}
+\beta=(X^TX)^{-1}X^TY\\
+=\left(\left[\begin{array}{cc}
+n&\sum x_i\\
+\sum x_i&\sum x_i^2
+\end{array}\right]\right)^{-1}X^TY\\
+=\frac{1}{n\sum x_i^2-\sum x_i\sum x_i}\left[\begin{array}{cc}
+\sum x_i^2&-\sum x_i\\
+-\sum x_i& n
+\end{array}\right] X^T Y\\
+=\frac{1}{n\sum x_i^2-\sum x_i\sum x_i}\left[\begin{array}{c}
+\sum x_i^2\sum y_i-\sum x_i\sum x_iy_i\\
+-\sum x_i\sum y_i+n\sum x_i y_i
+\end{array}\right]
+\end{array}$$
+
+Therefore, $\beta_0=\frac{\sum x_i^2\sum y_i-\sum x_i\sum x_iy_i}{n\sum x_i^2-\sum x_i\sum x_i}$, $\beta_1=\frac{-\sum x_i\sum y_i+n\sum x_iy_i}{n\sum x_i^2-\sum x_i\sum x_i}$
+
+# 2. This is the code of the question 2
+
+```{r}
+#Build up the OLS
+casl_ols_svd <-function(X, y){
+  svd_output <- svd(X)
+  r <- sum(svd_output$d > .Machine$double.eps)
+  U <- svd_output$u[, 1:r]
+  V <- svd_output$v[, 1:r]
+  beta <- V %*% (t(U) %*% y / svd_output$d[1:r])
+  beta
+}
+
+# Gradient Descent
+cost <- function(X, y, beta) {
+  sum( (X %*% beta - y)^2 ) / (2*length(y))
+}
+gradient <- function(X, y, alpha, iter_nums) {
+  cost_history <- double(iter_nums)
+  theta <- as.matrix(rep(0, ncol(X)))
+  for (i in 1:iter_nums) {
+    error <- (X %*% theta - y)
+    delta <- t(X) %*% error / length(y)
+    theta <- theta - alpha * delta
+    cost_history[i] <- cost(X, y, theta)
+  }
+  return(theta)
+}
+
+# Build up the database
+set.seed(1)
+n <- 1e4; p <- 4
+X <- matrix(rnorm(n*p), ncol = p)
+beta <- c(1,2,3,4)
+epsilon <- rnorm(n)
+y <- X %*% beta + epsilon
+
+# OLS on entire database
+beta_h_svd <- casl_ols_svd(X, y)
+error_ols <- sqrt(sum((y - X %*% beta_h_svd)^2))
+error_ols
+
+#To do the Cross-Validation for Gradient Descent
+error_gd_cv <- rep(0, 10)
+folds <- cut(seq(1,nrow(X)),breaks=10,labels=FALSE)
+
+# Perform 10 fold cross validation
+for(i in 1:10){
+  testIndexes <- which(folds==i,arr.ind=TRUE)
+  X_train <- X[testIndexes, ]
+  y_train <- y[testIndexes, ]
+  X_test <- X[-testIndexes, ]
+  y_test <- y[-testIndexes, ]
+  beta_gd <- gradient(X_train, y_train, 0.5, 10000)
+  error_gd_cv[i] <- sqrt(sum((y_test - X_test %*% beta_gd)^2))
+}
+error_gd <- mean(error_gd_cv)
+error_gd
+```
+
+## Comparison
+
+From the previous code calculation, we can get that the error getting from OLS function is 101.8349. The error getting from Gradient Descent is 96.8142. Do the comparison, it is not hard to see that they are pretty close.
+
+# 3. This is the code of the question 3
+
+## Here is a ridge regression function with colinear variables
+```{r}
+n1 <- 1000
+p1 <- 25
+beta1 <- c(1, rep(0, p1 - 1))
+X1 <- matrix(rnorm(n1 * p1), ncol = p1)
+alpha1 <- 0.001
+X1[,1] <- X1[,1] * alpha1 + X1[,2] * (1 - alpha1)
+
+# Ridge regression function
+My_ridge_regression <- function(X, y, lambda) {
+  n1 <- dim(X1)[2]
+  solve( crossprod(X1) + lambda * diag(n1), crossprod(X1, y1))
+}
+```
+
+## Here is the test code
+```{r}
+N1 <- 1e4; l2_errors <- rep(0, N1)
+for (k in 1:N1) {
+  y1 <- X1 %*% beta1 + rnorm(n1)
+  betahat1 <- My_ridge_regression(X1, y1, 0.1)
+  l2_errors[k] <- sqrt(sum((betahat1 - beta1)^2))
+}
+mean(l2_errors)
+```
+
+# 4. This is the code of the question 4
+```{r}
+n <- 200
+p <- 4
+N <- 500
+M <- 20
+beta <- c(1, -1, 0.5, 0)
+mu <- rep(0, p)
+Sigma <- matrix(0.9, nrow = p, ncol = p)
+diag(Sigma) <- 1
+X <- MASS::mvrnorm(n, mu, Sigma)
+y <- X %*% beta + rnorm(n, sd = 5)
+X_test <- MASS::mvrnorm(n, mu, Sigma)
+y_test <- X_test %*% beta + rnorm(n, sd = 5)
+y_test <- as.numeric(y_test)
+lambda_vals <- seq(0, n*2, length.out = N)
+casl_lm_ridge <-function(X, y, lambda_vals){
+  svd_obj <- svd(X)
+  U<- svd_obj$u
+  V <- svd_obj$v
+  svals <- svd_obj$d
+  k <- length(lambda_vals)
+  ridge_beta <- matrix(NA_real_, nrow = k, ncol = ncol(X))
+  for (j in seq_len(k)){
+    D <- diag(svals / (svals^2 + lambda_vals[j]))
+    ridge_beta[j,] <- V %*% D %*% t(U) %*% y
+  }
+  ridge_beta
+}
+beta_mat <- casl_lm_ridge(X, y, lambda_vals)
+y_hat <- tcrossprod(X_test, beta_mat)
+mse <- apply((y_hat - y_test)^2, 2, mean)
+lambda_vals[which.min(mse)]
+```
+
+## Explanation
+
+In this question, I use the grid search to find the best lambda, which makes the best estimation error -- the smallest. 
+
+# 5. This is the solution of the question 5
+For $\arg\min\frac{1}{2n}\|Y-X\beta\|^2_2+\lambda\|\beta\|_1$. According to the KKT solutions, $\hat{\beta}k$ is solution iff $X^T(Y-X\hat{\beta})=n\lambda\gamma$ and 
+$\gamma\in\left\{\begin{array}{l}
+sign\hat{\beta_i}\text{ where }\hat{\beta_i}\neq0\\
+[-1,1]\text{ where }\hat{\beta_i}=0
+\end{array}\right.$
+
+Assume $\hat{\beta_i}\neq0$, then according to the condition given by the question that $|X^TY|\leq n\lambda$, we have that $X^{T}(Y-X\hat{\beta})\neq n\lambda\gamma$, since $\gamma=\pm1$.
+
+Therefore, what we assume is incorrect and $\hat{\beta_i}=0$.

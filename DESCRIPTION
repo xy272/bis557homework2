@@ -1,0 +1,19 @@
+Package: bis557homework2
+Title: The packages is for the homework 2
+Version: 0.0.0.1
+Authors@R: 
+    person(given = "Xining",
+           family = "Yuan",
+           role = c("aut", "cre"),
+           email = "xining.yuan@yale.edu",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: In this package, I will complete one question in the textbook and then use different ways to do the comparison.
+License: LGPL (>= 2.1)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

@@ -155,19 +155,17 @@ mean(l2_errors)
 # 4. This is the code of the question 4
 
 ```r
+set.seed(4)
 n <- 200
 p <- 4
 N <- 500
-M <- 20
 beta <- c(1, -1, 0.5, 0)
-mu <- rep(0, p)
-Sigma <- matrix(0.9, nrow = p, ncol = p)
-diag(Sigma) <- 1
-X <- MASS::mvrnorm(n, mu, Sigma)
+X <- matrix(rnorm(n*p), ncol = p)
 y <- X %*% beta + rnorm(n, sd = 5)
-X_test <- MASS::mvrnorm(n, mu, Sigma)
+X_test <- matrix(rnorm(n*p), ncol = p)
 y_test <- X_test %*% beta + rnorm(n, sd = 5)
 y_test <- as.numeric(y_test)
+
 lambda_vals <- seq(0, n*2, length.out = N)
 casl_lm_ridge <-function(X, y, lambda_vals){
   svd_obj <- svd(X)
@@ -182,11 +180,12 @@ casl_lm_ridge <-function(X, y, lambda_vals){
   }
   ridge_beta
 }
+
 beta_mat <- casl_lm_ridge(X, y, lambda_vals)
 y_hat <- tcrossprod(X_test, beta_mat)
 mse <- apply((y_hat - y_test)^2, 2, mean)
 lambda_vals[which.min(mse)]
-#> [1] 400
+#> [1] 27.25451
 ```
 
 ## Explanation

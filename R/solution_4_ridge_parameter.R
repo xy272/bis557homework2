@@ -1,6 +1,7 @@
 #` @title Grab the ridge parameter
 #` @description Use grid search to find the best lambda, which makes the best estimation error -- the smallest.
 #`@export
+library(MASS)
 n <- 200
 p <- 4
 N <- 500
